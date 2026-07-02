@@ -1,0 +1,26 @@
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Entornos Virtuales
+venv/
+env/
+.venv/
+
+
+# Archivos de VS Code y SO
+.vscode/
+.DS_Store
+Thumbs.db
+
+
+# Ignoramos los archivos generados por los experimentos (CSVs, imágenes)
+resultados/*
+# Mantenemos la estructura de la carpeta resultados/ en el repo
+!resultados/.gitkeep
+!resultados/graficos/
+resultados/graficos/*
+!resultados/graficos/.gitkeep
