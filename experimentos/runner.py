@@ -1,3 +1,4 @@
+import os
 import time
 import statistics
 import pandas as pd
@@ -20,11 +21,11 @@ def medir_tiempos(algoritmo, grafo):
     tiempos = []
     for _ in range(REPETICIONES):
         inicio = time.perf_counter()
-        try:
-            algoritmo(grafo)
-        except ValueError:
-            # Si hay un ciclo negativo, ignoramos el error para no detener la medición
-            pass 
+        # Si el grafo tuviera un ciclo negativo el algoritmo lanza ValueError y
+        # abortamos la medición: silenciarlo dejaría tiempos que no corresponden
+        # a una ejecución completa (Bellman-Ford aborta temprano y Floyd-Warshall
+        # no), y esos datos no son comparables.
+        algoritmo(grafo)
         fin = time.perf_counter()
         tiempos.append(fin - inicio)
         
@@ -74,6 +75,7 @@ def ejecutar_experimentos():
 
     # Usamos pandas para exportar todo a un CSV limpio
     df_resultados = pd.DataFrame(resultados)
+    os.makedirs("resultados", exist_ok=True)
     ruta_salida = "resultados/metricas_experimentos.csv"
     df_resultados.to_csv(ruta_salida, index=False)
     print(f"\n Experimentos finalizados! Datos guardados en {ruta_salida}")
