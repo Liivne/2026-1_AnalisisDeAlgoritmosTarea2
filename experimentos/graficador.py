@@ -3,15 +3,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
+# Colores de la paleta Okabe-Ito (segura para daltonismo); la curva teórica
+# comparte el color de su serie empírica y se distingue por la línea discontinua
+COLOR_BASE = "#0072B2"  # azul
+COLOR_FW = "#D55E00"    # bermellón
+
+
 def calcular_curva_teorica(n_vals, tiempos, grado):
     """
-    Ajusta una curva teórica O(n^grado) al último punto de los datos empíricos.
-    Calcula la constante 'c' tal que c * (n_max^grado) = tiempo_max
+    Ajusta una curva teórica c * n^grado a los datos empíricos por mínimos
+    cuadrados usando TODOS los puntos: la constante que minimiza el error
+    cuadrático es c = sum(t_i * n_i^g) / sum(n_i^(2g)).
+    Retorna un rango suave de n y la curva evaluada sobre él.
     """
-    n_max = n_vals.iloc[-1]
-    tiempo_max = tiempos.iloc[-1]
-    c = tiempo_max / (n_max ** grado)
-    return c * (n_vals ** grado)
+    n = n_vals.to_numpy(dtype=float)
+    t = tiempos.to_numpy(dtype=float)
+    potencias = n ** grado
+    c = (t * potencias).sum() / (potencias ** 2).sum()
+    n_suave = np.linspace(n.min(), n.max(), 200)
+    return n_suave, c * n_suave ** grado
 
 def generar_graficos():
     # Aseguramos que la carpeta exista
@@ -36,21 +46,24 @@ def generar_graficos():
         
         n_vals = df_base['N']
         
-        # 1. Graficamos los datos empíricos
-        plt.plot(n_vals, df_base['Tiempo_Promedio_s'], marker='o', label='Empírico: Algoritmo Base', color='blue')
-        plt.plot(n_vals, df_fw['Tiempo_Promedio_s'], marker='s', label='Empírico: Floyd-Warshall', color='red')
-        
-        # 2. Comportamientos teóricos ajustados
+        # 1. Graficamos los datos empíricos con barras de error
+        #    (la barra es la desviación estándar de las 32 repeticiones)
+        plt.errorbar(n_vals, df_base['Tiempo_Promedio_s'], yerr=df_base['Desviacion_Estandar'],
+                     marker='o', capsize=3, label='Empírico: Algoritmo Base', color=COLOR_BASE)
+        plt.errorbar(n_vals, df_fw['Tiempo_Promedio_s'], yerr=df_fw['Desviacion_Estandar'],
+                     marker='s', capsize=3, label='Empírico: Floyd-Warshall', color=COLOR_FW)
+
+        # 2. Comportamientos teóricos ajustados por mínimos cuadrados
         # Floyd-Warshall es siempre O(V^3)
-        teorico_fw = calcular_curva_teorica(n_vals, df_fw['Tiempo_Promedio_s'], grado=3)
-        plt.plot(n_vals, teorico_fw, linestyle='--', color='darkred', alpha=0.5, label='Teórico Ajustado: FW $O(n^3)$')
-        
+        n_suave, teorico_fw = calcular_curva_teorica(n_vals, df_fw['Tiempo_Promedio_s'], grado=3)
+        plt.plot(n_suave, teorico_fw, linestyle='--', color=COLOR_FW, alpha=0.55, label='Teórico Ajustado: FW $O(n^3)$')
+
         # Bellman-Ford (Base) es n * O(V * E)
         # Para Cadena, E es aprox n, entonces n * n * n = O(n^3)
         # Para Denso, Disperso y Negativo, la probabilidad escala con n^2, entonces n * n * n^2 = O(n^4)
         grado_base = 3 if exp == "Cadena" else 4
-        teorico_base = calcular_curva_teorica(n_vals, df_base['Tiempo_Promedio_s'], grado=grado_base)
-        plt.plot(n_vals, teorico_base, linestyle='--', color='darkblue', alpha=0.5, label=f'Teórico Ajustado: Base $O(n^{grado_base})$')
+        n_suave, teorico_base = calcular_curva_teorica(n_vals, df_base['Tiempo_Promedio_s'], grado=grado_base)
+        plt.plot(n_suave, teorico_base, linestyle='--', color=COLOR_BASE, alpha=0.55, label=f'Teórico Ajustado: Base $O(n^{grado_base})$')
         
         # 3. Configuraciones visuales en escala lineal
         plt.title(f'Tiempos de Ejecución: Experimento Grafo {exp}')
