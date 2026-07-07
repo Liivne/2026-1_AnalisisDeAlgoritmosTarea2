@@ -9,8 +9,8 @@ import time
 import csv
 
 # Sección 2.3: ejecutar Floyd-Warshall sobre los datasets reales de
-# networkrepository.com (bio-SC-TS y power-685-bus), reportar el tiempo de
-# ejecución y exportar las distancias mínimas a un .csv con filas
+# networkrepository.com (bio-SC-TS, power-685-bus y chebyshev2), reportar el
+# tiempo de ejecución y exportar las distancias mínimas a un .csv con filas
 # {nodo1, nodo2, distancia_minima}.
 
 
@@ -40,14 +40,21 @@ def cargar_edges(ruta):
 
 def cargar_mtx(ruta):
     """
-    Carga un archivo MatrixMarket (.mtx) simétrico, con nodos desde 1.
-    power-685-bus es una matriz de admitancia: sus valores numéricos no
-    representan distancias (hay valores negativos que crearían ciclos
-    negativos), así que usamos solo la estructura del grafo con peso 1 por
-    arista, igual que como lo presenta networkrepository.
+    Carga un archivo MatrixMarket (.mtx), con nodos desde 1.
+    Estas matrices no representan distancias con sus valores numéricos
+    (power-685-bus es una matriz de admitancia y chebyshev2 una matriz de
+    diferenciación espectral; ambas tienen valores negativos que crearían
+    ciclos negativos), así que usamos solo la estructura del grafo con peso 1
+    por arista, igual que como lo presenta networkrepository.
+
+    El header dice si la matriz es 'symmetric' (guarda cada arista una vez y
+    el grafo es no dirigido, caso power-685-bus) o 'general' (guarda cada
+    entrada dirigida por separado, caso chebyshev2). Retorna (grafo, dirigido).
     """
     g = None
     with open(ruta) as f:
+        # El header %%MatrixMarket trae: objeto formato tipo simetría
+        dirigido = f.readline().split()[-1].lower() == 'general'
         for linea in f:
             if linea.startswith('%'):
                 continue
@@ -61,11 +68,12 @@ def cargar_mtx(ruta):
             if u == v:
                 continue
             g.agregar_arista(u, v, 1)
-            g.agregar_arista(v, u, 1)
-    return g
+            if not dirigido:
+                g.agregar_arista(v, u, 1)
+    return g, dirigido
 
 
-def procesar_dataset(nombre, grafo):
+def procesar_dataset(nombre, grafo, dirigido=False):
     """Corre Floyd-Warshall midiendo el tiempo y exporta las distancias a CSV."""
     n = grafo.n
     print(f"\n--- Dataset {nombre}: {n} nodos, {len(grafo.obtener_aristas())} aristas dirigidas ---")
@@ -83,10 +91,13 @@ def procesar_dataset(nombre, grafo):
     with open(ruta_salida, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["nodo1", "nodo2", "distancia_minima"])
-        # El grafo es no dirigido (distancias simétricas), así que basta
-        # exportar cada par una sola vez (i < j)
+        # En un grafo no dirigido las distancias son simétricas, así que basta
+        # exportar cada par una sola vez (i < j); en uno dirigido d(i,j) puede
+        # diferir de d(j,i) y exportamos todos los pares ordenados
         for i in range(n):
-            for j in range(i + 1, n):
+            for j in range(n) if dirigido else range(i + 1, n):
+                if i == j:
+                    continue
                 if dist[i][j] == INF:
                     # Pares en componentes distintas: distancia infinita
                     writer.writerow([i, j, "inf"])
@@ -106,8 +117,11 @@ if __name__ == "__main__":
     g_bio = cargar_edges("datasets/bio-SC-TS.edges")
     tiempos["bio-SC-TS"] = procesar_dataset("bio-SC-TS", g_bio)
 
-    g_power = cargar_mtx("datasets/power-685-bus.mtx")
-    tiempos["power-685-bus"] = procesar_dataset("power-685-bus", g_power)
+    g_power, dirigido = cargar_mtx("datasets/power-685-bus.mtx")
+    tiempos["power-685-bus"] = procesar_dataset("power-685-bus", g_power, dirigido)
+
+    g_cheb, dirigido = cargar_mtx("datasets/chebyshev2.mtx")
+    tiempos["chebyshev2"] = procesar_dataset("chebyshev2", g_cheb, dirigido)
 
     print("\n=== Resumen de tiempos (para el informe) ===")
     for nombre, t in tiempos.items():

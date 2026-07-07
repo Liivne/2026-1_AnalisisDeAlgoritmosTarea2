@@ -14,7 +14,7 @@ experimentos/
   runner.py                        Medición de tiempos: 32 repeticiones por medición, promedio + desviación estándar
   graficador.py                    Gráficos en escala lineal con barras de error y curvas teóricas ajustadas por mínimos cuadrados
   exportar_csv.py                  Sección 2.3: Floyd-Warshall sobre los datasets reales y exportación a CSV
-datasets/                          bio-SC-TS.edges y power-685-bus.mtx (networkrepository.com)
+datasets/                          bio-SC-TS.edges, power-685-bus.mtx y chebyshev2.mtx (networkrepository.com)
 resultados/                        CSVs de métricas y distancias + gráficos .png generados
 prueba.py                          Verificación de correctitud con instancias pequeñas hechas a mano
 docs/informe.pdf                   Informe final
@@ -59,13 +59,13 @@ python experimentos/graficador.py
 
 Genera un `.png` por experimento en `resultados/graficos/`, comparando ambos algoritmos en escala lineal con sus curvas teóricas ajustadas superpuestas.
 
-**4. Datasets reales de la sección 2.3** (bio-SC-TS y power-685-bus; tarda ~20 segundos):
+**4. Datasets reales de la sección 2.3** (bio-SC-TS, power-685-bus y chebyshev2; tarda varios minutos por el tamaño de chebyshev2):
 
 ```bash
 python experimentos/exportar_csv.py
 ```
 
-Corre Floyd-Warshall sobre ambos datasets, reporta el tiempo de ejecución y exporta `resultados/distancias_<dataset>.csv` con filas `{nodo1, nodo2, distancia_minima}` (un par por fila; `inf` para pares sin camino).
+Corre Floyd-Warshall sobre los tres datasets, reporta el tiempo de ejecución y exporta `resultados/distancias_<dataset>.csv` con filas `{nodo1, nodo2, distancia_minima}` (un par por fila; `inf` para pares sin camino). bio-SC-TS y power-685-bus son no dirigidos, así que su CSV trae cada par una sola vez; chebyshev2 es dirigido (matriz MatrixMarket `general`) y su CSV trae todos los pares ordenados.
 
 ## Especificaciones de la máquina utilizada
 
@@ -76,7 +76,7 @@ Los tiempos reportados en el informe se midieron en:
 - **Sistema operativo**: Ubuntu 24.04 LTS sobre WSL2 (Windows, kernel 6.6.87.2-microsoft-standard-WSL2)
 - **Python**: 3.13.13
 
-Tiempos de referencia de la sección 2.3 en esta máquina: bio-SC-TS (636 nodos) en ~6,8 s y power-685-bus (685 nodos) en ~12,4 s.
+Tiempos de referencia de la sección 2.3 en esta máquina: bio-SC-TS (636 nodos) en ~7 s, power-685-bus (685 nodos) en ~14 s y chebyshev2 (2053 nodos) en ~519 s (~8,7 min).
 
 ============================================================
 Plan de Acción Paso a Paso:
