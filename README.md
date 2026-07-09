@@ -77,9 +77,3 @@ Los tiempos reportados en el informe se midieron en:
 - **Python**: 3.13.13
 
 Tiempos de referencia de la sección 2.3 en esta máquina: bio-SC-TS (636 nodos) en ~7 s, power-685-bus (685 nodos) en ~14 s y chebyshev2 (2053 nodos) en ~519 s (~8,7 min).
-
-`grupal`
-
-
-7. Fase 7: Empaquetado. Redactar el informe final asegurándose de documentar el código en él. Crear el archivo Readme detallando cómo ejecutar los códigos y las especificaciones de la máquina utilizada. 
-
